@@ -374,6 +374,56 @@ void test_q_table_blocks()
     TEST_ASSERT_EQUAL_INT(2, bestQMove(b));
 }
 
+/**
+ * @brief Level "hard" takes an immediate win.
+ */
+void test_stufe_schwer_nimmt_gewinn()
+{
+
+    uint8_t b[9] = {2,2,0, 1,1,0, 1,0,0};
+
+    TEST_ASSERT_EQUAL_INT(2, waehleZug(b, STUFE_SCHWER));
+}
+
+/**
+ * @brief Level "hard" never loses against a random player.
+ */
+void test_stufe_schwer_verliert_nie()
+{
+
+    aiSeed(12345);
+
+    uint32_t r = 987654321u;
+
+    for(uint16_t spiel = 0; spiel < 2000; spiel++)
+    {
+        uint8_t b[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+        uint8_t amZug = (spiel % 2 == 0) ? 1 : 2;
+
+        while(winner(b) == 0 && !isFull(b))
+        {
+            int z;
+
+            if(amZug == 2)
+            {
+                z = waehleZug(b, STUFE_SCHWER);
+            }
+            else
+            {
+                uint8_t m[9];
+                uint8_t n = legalMoves(b, m);
+
+                r = r * 1664525u + 1013904223u;
+                z = m[(r >> 16) % n];
+            }
+
+            b[z] = amZug;
+            amZug = (uint8_t)(3 - amZug);
+        }
+
+        TEST_ASSERT_TRUE(winner(b) != 1);
+    }
+}
 
 /**
  * @brief Entry point of the test program, runs all tests.
@@ -406,6 +456,11 @@ int main()
     RUN_TEST(test_golden_encoding);
     RUN_TEST(test_q_table_takes_win);
     RUN_TEST(test_q_table_blocks);
+
+    RUN_TEST(test_stufe_schwer_nimmt_gewinn);
+    RUN_TEST(test_stufe_schwer_verliert_nie);
+
+    return UNITY_END();
 
     return UNITY_END();
 }

@@ -1,5 +1,6 @@
 #include "ai.h"
 #include "game.h"
+#include "ai_table.h"
 
 static const uint8_t SPIELER = 1;
 static const uint8_t KI      = 2;
@@ -208,12 +209,60 @@ static int zufallsZug(const uint8_t brett[9])
     return m[naechsteZufallszahl() % n];
 }
 
+/**
+ * @brief Picks a move from the trained Q table.
+ *
+ * Among all moves with the highest Q value one is chosen at random,
+ * so the AI does not play the same game every time.
+ *
+ * @param brett  Board with 9 cells (AI = 2 is the one to move).
+ * @return Cell index, or -1 if no move is possible.
+ */
+static int qTabellenZug(const uint8_t brett[9])
+{
+
+    const int8_t* zeile = AI_Q[encodeState(brett)];
+    int8_t        best  = -128;
+
+    for(uint8_t i = 0; i < 9; i++)
+    {
+        if(zeile[i] > best)
+        {
+            best = zeile[i];
+        }
+    }
+
+    if(best == -128)   // every cell is marked "not allowed"
+    {
+        return -1;
+    }
+
+    uint8_t m[9];
+    uint8_t n = 0;
+
+    for(uint8_t i = 0; i < 9; i++)
+    {
+        if(zeile[i] == best)
+        {
+            m[n] = i;
+            n++;
+        }
+    }
+
+    return m[naechsteZufallszahl() % n];
+}
+
 int waehleZug(const uint8_t brett[9], uint8_t stufe)
 {
 
     if(stufe >= STUFE_PERFEKT)
     {
         return minimaxZug(brett);
+    }
+
+    if(stufe == STUFE_SCHWER)
+    {
+        return qTabellenZug(brett);
     }
 
     if(stufe == STUFE_MITTEL)
