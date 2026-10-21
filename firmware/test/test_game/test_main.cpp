@@ -2,6 +2,7 @@
 
 #include "game.h"
 #include "ai.h"
+#include "ai_table.h"
 
 /**
  * @brief Unity hook, runs before every test. Not needed here.
@@ -312,6 +313,69 @@ void test_minimax_verliert_nie_ki_beginnt()
 }
 
 /**
+ * @brief Returns the cell with the highest Q value for a board (AI = O to move).
+ *
+ * @param b  Board with 9 cells.
+ * @return Cell index of the best allowed move, or -1 if none is allowed.
+ */
+static int bestQMove(const uint8_t b[9])
+{
+
+    const int8_t* row = AI_Q[encodeState(b)];
+    int best = -1;
+
+    for(uint8_t i = 0; i < 9; i++)
+    {
+        if(row[i] == -128)
+        {
+            continue;
+        }
+
+        if(best < 0 || row[i] > row[best])
+        {
+            best = i;
+        }
+    }
+
+    return best;
+}
+
+/**
+ * @brief encodeState() gives the same indices as the Python encoding.
+ */
+void test_golden_encoding()
+{
+
+    for(uint8_t i = 0; i < 5; i++)
+    {
+        TEST_ASSERT_EQUAL_UINT16(AI_GOLDEN_INDEX[i], encodeState(AI_GOLDEN_BOARDS[i]));
+    }
+}
+
+/**
+ * @brief The trained table takes an immediate win.
+ */
+void test_q_table_takes_win()
+{
+
+    uint8_t b[9] = {2,2,0, 1,1,0, 1,0,0};
+
+    TEST_ASSERT_EQUAL_INT(2, bestQMove(b));
+}
+
+/**
+ * @brief The trained table blocks an immediate win of the player.
+ */
+void test_q_table_blocks()
+{
+
+    uint8_t b[9] = {1,1,0, 0,2,0, 0,0,0};
+
+    TEST_ASSERT_EQUAL_INT(2, bestQMove(b));
+}
+
+
+/**
  * @brief Entry point of the test program, runs all tests.
  *
  * @return Number of failed tests (0 = all passed).
@@ -338,6 +402,10 @@ int main()
     RUN_TEST(test_stufe_mittel);
 
     RUN_TEST(test_minimax_verliert_nie_ki_beginnt);
+
+    RUN_TEST(test_golden_encoding);
+    RUN_TEST(test_q_table_takes_win);
+    RUN_TEST(test_q_table_blocks);
 
     return UNITY_END();
 }
