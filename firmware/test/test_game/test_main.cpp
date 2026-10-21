@@ -256,6 +256,62 @@ void test_stufe_mittel()
 }
 
 /**
+ * @brief Plays every possible game in which the AI moves first.
+ *
+ * The AI answers with the perfect level, the player tries every free cell.
+ * The player must never win.
+ *
+ * @param b  Board, restored before returning. AI (O) is to move.
+ */
+static void spieleAlleSpieleKiBeginnt(uint8_t b[9])
+{
+
+    int z = waehleZug(b, STUFE_PERFEKT);
+
+    TEST_ASSERT_TRUE(z >= 0 && z < 9);
+    TEST_ASSERT_EQUAL_UINT8(0, b[z]);
+
+    b[z] = 2;
+
+    if(winner(b) == 0 && !isFull(b))
+    {
+        for(uint8_t i = 0; i < 9; i++)
+        {
+            if(b[i] != 0)
+            {
+                continue;
+            }
+
+            b[i] = 1;
+
+            if(winner(b) == 1)
+            {
+                TEST_FAIL_MESSAGE("The player won against minimax");
+            }
+            else if(!isFull(b))
+            {
+                spieleAlleSpieleKiBeginnt(b);
+            }
+
+            b[i] = 0;
+        }
+    }
+
+    b[z] = 0;
+}
+
+/**
+ * @brief Minimax never loses when it moves first either.
+ */
+void test_minimax_verliert_nie_ki_beginnt()
+{
+
+    uint8_t b[9] = {0};
+
+    spieleAlleSpieleKiBeginnt(b);
+}
+
+/**
  * @brief Entry point of the test program, runs all tests.
  *
  * @return Number of failed tests (0 = all passed).
@@ -280,6 +336,8 @@ int main()
     RUN_TEST(test_minimax_verliert_nie);
     RUN_TEST(test_stufe_zufall_legal);
     RUN_TEST(test_stufe_mittel);
+
+    RUN_TEST(test_minimax_verliert_nie_ki_beginnt);
 
     return UNITY_END();
 }
