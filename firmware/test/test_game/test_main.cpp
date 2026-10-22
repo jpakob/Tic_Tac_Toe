@@ -426,6 +426,102 @@ void test_stufe_schwer_verliert_nie()
 }
 
 /**
+ * @brief Collects all cells with the highest Q value in the given state.
+ *
+ * @param b    Board with 9 cells (AI = 2 is the one to move).
+ * @param out  Output: the cells that share the highest value.
+ * @return Number of cells written to out (0 if no move is allowed).
+ */
+static uint8_t bestQMoves(const uint8_t b[9], uint8_t out[9])
+{
+
+    const int8_t* row = AI_Q[encodeState(b)];
+    int8_t        best = -128;
+    uint8_t       n = 0;
+
+    for(uint8_t i = 0; i < 9; i++)
+    {
+        if(row[i] > best)
+        {
+            best = row[i];
+        }
+    }
+
+    if(best == -128)
+    {
+        return 0;
+    }
+
+    for(uint8_t i = 0; i < 9; i++)
+    {
+        if(row[i] == best)
+        {
+            out[n++] = i;
+        }
+    }
+
+    return n;
+}
+
+/**
+ * @brief Plays every possible game against the Q table.
+ *
+ * The player tries every free cell, the AI tries every move that ties
+ * for the highest Q value. The player must never win.
+ *
+ * @param b      Board, restored before returning.
+ * @param amZug  Who moves next (1 = player, 2 = AI).
+ */
+static void spieleAlleSpieleQTabelle(uint8_t b[9], uint8_t amZug)
+{
+
+    if(winner(b) == 1)
+    {
+        TEST_FAIL_MESSAGE("The player won against the Q table");
+    }
+
+    if(winner(b) != 0 || isFull(b))
+    {
+        return;
+    }
+
+    uint8_t m[9];
+    uint8_t n;
+
+    if(amZug == 2)
+    {
+        n = bestQMoves(b, m);
+    }
+    else
+    {
+        n = legalMoves(b, m);
+    }
+
+    TEST_ASSERT_TRUE(n > 0);
+
+    for(uint8_t k = 0; k < n; k++)
+    {
+        b[m[k]] = amZug;
+
+        spieleAlleSpieleQTabelle(b, (uint8_t)(3 - amZug));
+
+        b[m[k]] = 0;
+    }
+}
+
+/**
+ * @brief The Q table never loses, in any game, whoever starts.
+ */
+void test_q_table_verliert_nie_exhaustiv()
+{
+
+    uint8_t b[9] = {0};
+
+    spieleAlleSpieleQTabelle(b, 1);   // player starts
+    spieleAlleSpieleQTabelle(b, 2);   // AI starts
+}
+
+/**
  * @brief Entry point of the test program, runs all tests.
  *
  * @return Number of failed tests (0 = all passed).
@@ -460,7 +556,7 @@ int main()
     RUN_TEST(test_stufe_schwer_nimmt_gewinn);
     RUN_TEST(test_stufe_schwer_verliert_nie);
 
-    return UNITY_END();
+    RUN_TEST(test_q_table_verliert_nie_exhaustiv);
 
     return UNITY_END();
 }
