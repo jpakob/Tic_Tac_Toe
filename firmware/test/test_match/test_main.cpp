@@ -467,6 +467,48 @@ void test_sensors_ignored_while_thinking()
 }
 
 /**
+ * @brief The AI wins with its move: game over, score for the AI, win line stored.
+ *
+ * Position before the player's move: X on 0 and 8, O on 3 and 4. The player
+ * puts a stone on 7 (no win), then the AI completes the middle row at 5.
+ */
+void test_ai_win_updates_score()
+{
+
+    uint32_t t = startPlayerRound();
+
+    m.level = STUFE_PERFEKT;
+
+    const uint8_t pos[9] = {1,0,0, 2,2,0, 0,0,1};
+
+    setBoard(pos);
+
+    in.occupied[0] = true;
+    in.occupied[8] = true;
+    step(t + 10);   // sensors match the board, nothing happens
+
+    TEST_ASSERT_TRUE(m.state == MatchState::PLAYER_TURN);
+
+    in.occupied[7] = true;
+    step(t + 20);
+
+    TEST_ASSERT_TRUE(m.state == MatchState::AI_THINKING);
+    TEST_ASSERT_EQUAL_INT(5, m.pendingMove);   // perfect level takes the win
+
+    step(t + 20 + THINK_MAX_MS);
+
+    TEST_ASSERT_TRUE(m.state == MatchState::GAME_OVER);
+    TEST_ASSERT_TRUE(m.message == MatchMessage::AI_WINS);
+    TEST_ASSERT_EQUAL_UINT16(1, m.scoreAi);
+    TEST_ASSERT_EQUAL_UINT16(0, m.scorePlayer);
+    TEST_ASSERT_TRUE(m.hasWinLine);
+    TEST_ASSERT_EQUAL_UINT8(3, m.winLineCells[0]);
+    TEST_ASSERT_EQUAL_UINT8(4, m.winLineCells[1]);
+    TEST_ASSERT_EQUAL_UINT8(5, m.winLineCells[2]);
+    TEST_ASSERT_FALSE(m.playerStartsNext);
+}
+
+/**
  * @brief Entry point of the test program, runs all tests.
  *
  * @return Number of failed tests (0 = all passed).
@@ -489,6 +531,8 @@ int main()
     RUN_TEST(test_draw);
     RUN_TEST(test_new_game_button_aborts);
     RUN_TEST(test_sensors_ignored_while_thinking);
+
+    RUN_TEST(test_ai_win_updates_score);
 
     return UNITY_END();
 }
