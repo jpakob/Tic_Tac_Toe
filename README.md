@@ -1,6 +1,6 @@
 # VMS_Tic_Tac_Toe
 
-
+---
 
 ## Getting started
 
